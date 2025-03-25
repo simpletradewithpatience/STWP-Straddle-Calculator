@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Straddle Option Calculator</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f4f7fb;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            background: white;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #00796b;
+            margin-bottom: 10px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .row input {
+            width: 31%;
+            padding: 8px;
+            font-size: 14px;
+            border: 2px solid #00796b;
+            border-radius: 5px;
+            margin: 5px 0;
+            outline: none;
+        }
+
+        .row input:focus {
+            border-color: #00796b;
+            box-shadow: 0 0 5px rgba(0, 121, 107, 0.3);
+        }
+
+        .row button {
+            width: 31%;
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px 0;
+            transition: background-color 0.3s;
+        }
+
+        .row button:hover {
+            background-color: #004d40;
+        }
+
+        .output {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .output output {
+            width: 31%;
+            padding: 10px;
+            font-size: 14px;
+            background-color: #e1f5fe;
+            border: 2px solid #0288d1;
+            border-radius: 5px;
+            margin: 5px 0;
+            color: #0288d1;
+        }
+
+        #tradeDecision {
+            margin-top: 20px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+        }
+
+        #tradeDecision.good {
+            background-color: #388e3c;
+        }
+
+        #tradeDecision.caution {
+            background-color: #ff9800;
+        }
+
+        #tradeDecision.bad {
+            background-color: #e53935;
+        }
+
+        .trade-icon {
+            margin-right: 10px;
+        }
+
+        .disclaimer {
+            font-size: 14px;
+            color: #757575;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .disclaimer a {
+            color: #0288d1;
+            text-decoration: none;
+        }
+
+        .disclaimer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script>
+        function calculateStraddle() {
+            let callPremium = parseFloat(document.getElementById("callPremium").value) || 0;
+            let putPremium = parseFloat(document.getElementById("putPremium").value) || 0;
+            let strikePrice = parseFloat(document.getElementById("strikePrice").value) || 0;
+            let lotSize = parseFloat(document.getElementById("lotSize").value) || 1;
+            let callIV = parseFloat(document.getElementById("callIV").value) || 0;
+            let putIV = parseFloat(document.getElementById("putIV").value) || 0;
+            let expiryDate = document.getElementById("expiryDate").value || "";
+            
+            let currentDate = new Date();
+            let expiry = new Date(expiryDate);
+            let timeDifference = expiry - currentDate;
+            let daysToExpiry = Math.ceil(timeDifference / (1000 * 3600 * 24)); // Convert milliseconds to days
+
+            let totalCost = (callPremium + putPremium) * lotSize;
+            let upperBreakeven = strikePrice + (callPremium + putPremium);
+            let lowerBreakeven = strikePrice - (callPremium + putPremium);
+            let maxProfit = "Unlimited";
+            let maxLoss = totalCost;
+            let expectedMove = ((callPremium + putPremium) / strikePrice) * 100;
+
+            // Calculate Straddle Premium (call premium + put premium)
+            let straddlePremium = callPremium + putPremium;
+
+            // Calculate Probability of Profit
+            let callPOP = (1 - (callIV / 100)); // Simple estimate based on IV for call option
+            let putPOP = (1 - (putIV / 100)); // Simple estimate based on IV for put option
+            let probabilityOfProfit = Math.min(callPOP, putPOP) * 100;
+
+            // Displaying the calculated values
+            document.getElementById("totalCost").textContent = `Total Cost: ₹${totalCost.toFixed(2)}`;
+            document.getElementById("upperBreakeven").textContent = `Upper Breakeven: ₹${upperBreakeven.toFixed(2)}`;
+            document.getElementById("lowerBreakeven").textContent = `Lower Breakeven: ₹${lowerBreakeven.toFixed(2)}`;
+            document.getElementById("maxProfit").textContent = `Max Profit: ${maxProfit}`;
+            document.getElementById("maxLoss").textContent = `Max Loss: ₹${maxLoss.toFixed(2)}`;
+            document.getElementById("expectedMove").textContent = `Expected Move: ${expectedMove.toFixed(2)}%`;
+            document.getElementById("expiryDateOutput").textContent = `Days to Expiry: ${daysToExpiry}`;
+            document.getElementById("straddlePremium").textContent = `Straddle Premium: ₹${straddlePremium.toFixed(2)}`;
+            document.getElementById("probabilityOfProfit").textContent = `Probability %: ${probabilityOfProfit.toFixed(2)}%`;
+
+            let tradeDecision = document.getElementById("tradeDecision");
+            tradeDecision.style.color = "#fff";
+
+            if (expectedMove < 5 || (callIV < 15 && putIV < 15)) {
+                tradeDecision.innerHTML = `<span class="trade-icon">❌</span>Avoid (Low Expected Move or Low IV): The market may not move enough for a profitable trade. Both the expected market movement (Expected Move) and the implied volatility (IV) are too low. This means your options might not increase in value enough to cover the costs of the trade. It’s best to avoid entering a straddle trade in this scenario.`;
+                tradeDecision.className = "bad";
+            } else if (totalCost < (upperBreakeven - lowerBreakeven) / 2) {
+                tradeDecision.innerHTML = `<span class="trade-icon">✅</span>Good Straddle Setup (Favorable Risk-Reward): This is a good setup for a straddle trade. You’re paying a reasonable premium for both call and put options, and the market has enough movement potential (Expected Move is high). The IV supports the trade, meaning you have a good chance of profit if the market moves as expected.`;
+                tradeDecision.className = "good";
+            } else {
+                tradeDecision.innerHTML = `<span class="trade-icon">⚠️</span>Caution (Overpriced Straddle): This trade setup might be overpriced. Although there’s some potential, the cost of entering the straddle might be too high compared to the potential for profit. It’s important to be cautious and check if the premiums are inflated due to high implied volatility or overreaction in the market.`;
+                tradeDecision.className = "caution";
+            }
+        }
+
+        function resetCalculator() {
+            document.querySelectorAll("input").forEach(input => input.value = "");
+            let outputs = document.querySelectorAll("output");
+            outputs.forEach(output => {
+                // Preserve the caption text by setting default content
+                if (output.id === "straddlePremium") output.textContent = "Straddle Premium: ";
+                if (output.id === "upperBreakeven") output.textContent = "Upper Breakeven: ";
+                if (output.id === "lowerBreakeven") output.textContent = "Lower Breakeven: ";
+                if (output.id === "maxProfit") output.textContent = "Max Profit: ";
+                if (output.id === "maxLoss") output.textContent = "Max Loss: ";
+                if (output.id === "expectedMove") output.textContent = "Expected Move: ";
+                if (output.id === "expiryDateOutput") output.textContent = "Days to Expiry: ";
+                if (output.id === "totalCost") output.textContent = "Total Cost: ";
+                if (output.id === "probabilityOfProfit") output.textContent = "Probability %: ";
+            });
+
+            let tradeDecision = document.getElementById("tradeDecision");
+            tradeDecision.textContent = "Trade Decision";
+            tradeDecision.className = "";
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Straddle Option Calculator</h1>
+
+        <!-- Row 1: Stock Name, Spot Price, and Strike Price -->
+        <div class="row">
+            <input type="text" id="stockName" placeholder="Stock Name" title="Enter the stock name">
+            <input type="number" id="spotPrice" placeholder="Spot Price" title="Enter the current stock price">
+            <input type="number" id="strikePrice" placeholder="Strike Price" title="Enter the strike price of the option">
+        </div>
+
+        <!-- Row 2: Lot Size, Call Premium, and Put Premium -->
+        <div class="row">
+            <input type="number" id="lotSize" placeholder="Lot Size" title="Enter the lot size of the options">
+            <input type="number" id="callPremium" placeholder="Call Premium" title="Enter the premium of the call option">
+            <input type="number" id="putPremium" placeholder="Put Premium" title="Enter the premium of the put option">
+        </div>
+
+        <!-- Row 3: Expiry Date, Call IV, and Put IV -->
+        <div class="row">
+            <input type="date" id="expiryDate" placeholder="Expiry Date" title="Enter the date the options expire">
+            <input type="number" id="callIV" placeholder="Call IV (%)" title="Implied Volatility for the Call option. Higher IV suggests higher potential price movement.">
+            <input type="number" id="putIV" placeholder="Put IV (%)" title="Implied Volatility for the Put option. Higher IV suggests higher potential price movement.">
+        </div>
+
+        <!-- Buttons for Calculate and Reset -->
+        <div class="row">
+            <button onclick="calculateStraddle()">Calculate</button>
+            <button onclick="resetCalculator()">Reset</button>
+        </div>
+
+        <!-- Output Results -->
+        <div class="output">
+            <output id="straddlePremium">Straddle Premium: </output>
+            <output id="upperBreakeven">Upper Breakeven: </output>
+            <output id="lowerBreakeven">Lower Breakeven: </output>
+        </div>
+        <div class="output">
+            <output id="maxProfit">Max Profit: </output>
+            <output id="maxLoss">Max Loss: </output>
+            <output id="expectedMove">Expected Move: </output>
+        </div>
+        <div class="output">
+            <output id="totalCost">Total Cost: </output>
+            <output id="probabilityOfProfit">Probability %: </output>
+            <output id="expiryDateOutput">Days to Expiry: </output>
+        </div>
+
+        <!-- Trade Decision Display -->
+        <div id="tradeDecision">
+            Trade Decision: The system analyzes the market setup and suggests the best course of action based on factors like cost, potential movement, and volatility.
+            <ul>
+                <li><strong>Avoid:</strong> If the market isn't expected to move enough, or the implied volatility is too low, avoid entering this trade.</li>
+                <li><strong>Good Setup:</strong> A favorable setup for a straddle trade, with reasonable premiums and good market movement potential.</li>
+                <li><strong>Caution:</strong> Be cautious as the trade might be overpriced due to high implied volatility or inflated premiums.</li>
+            </ul>
+        </div>
+
+        <!-- Disclaimer -->
+<div class="disclaimer">
+    <p><strong>Disclaimer:</strong></p>
+    <p>This calculator is provided for educational and informational purposes only. The information presented here is not intended to be, nor should it be construed as, investment or financial advice. The creator of this tool does not offer, endorse, or recommend any specific stocks, options, or trading strategies. Please consult a qualified financial advisor or professional before making any investment or trading decisions.</p>
+    <p><strong>Risk Disclosure:</strong> Trading in the stock market involves substantial risk and can result in significant losses. The use of this tool is at your own risk, and the creator is not responsible for any financial outcomes, whether gains or losses, resulting from the use of this information. We do not provide any Buy, Sell, or Target recommendations. Users are encouraged to conduct their own research and analysis before making any trading decisions.</p>
+    <p><strong>SEBI Compliance:</strong> This tool is not intended to offer any advice or recommendations regarding the buying or selling of securities. The content is solely for educational purposes. As per SEBI regulations, please consult a SEBI-registered research analyst for any investment advice.</p>
+</div>
+
+<style>
+    .disclaimer {
+        text-align: left; /* Ensures all text aligns to the left */
+        margin: 10px 0; /* Optional: Adds margin for spacing */
+    }
+</style>
+    </div>
+</body>
+</html>
